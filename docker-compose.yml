@@ -27,7 +27,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-unicorn_user}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s  
 
   redis:
     container_name: redis
