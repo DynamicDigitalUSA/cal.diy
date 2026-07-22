@@ -127,7 +127,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
-      - redis
+      redis:
+        condition: service_started
 
   # Prisma Studio: Kept disabled/commented out by default to avoid exposing administrative DB tools publicly
   # studio:
