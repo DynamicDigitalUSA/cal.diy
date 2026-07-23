@@ -9,6 +9,8 @@
   "dependencies": {
     "@calcom/dayjs": "workspace:*",
     "@calcom/lib": "workspace:*",
+    "entities": "4.5.0",
+    "nodemailer": "7.0.12",
     "rrule": "2.7.1",
     "short-uuid": "4.2.0"
   },
