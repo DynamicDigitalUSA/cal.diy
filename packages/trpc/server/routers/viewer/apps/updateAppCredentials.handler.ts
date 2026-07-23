@@ -13,39 +13,12 @@ export type UpdateAppCredentialsOptions = {
   input: TUpdateAppCredentialsInputSchema;
 };
 
-type CredentialValidator = (args: {
-  input: TUpdateAppCredentialsInputSchema;
-}) => Promise<TUpdateAppCredentialsInputSchema["key"]>;
-
-/** Optional per-app validators — string specifier so missing apps do not break slim builds. */
-const loadValidator = async (appId: string): Promise<CredentialValidator | null> => {
-  if (appId !== "paypal") return null;
-  try {
-    // Non-literal specifier: TypeScript must not require the module at compile time
-    const specifier = "@calcom/app-store/paypal/lib/updateAppCredentials.validator";
-    const mod = (await import(specifier)) as { default: CredentialValidator };
-    return mod.default;
-  } catch {
-    return null;
-  }
-};
-
 export const handleCustomValidations = async ({
   input,
-  appId,
 }: UpdateAppCredentialsOptions & { appId: string }) => {
-  const { key } = input;
-  const validator = await loadValidator(appId);
-  // If no validator is found, return the key as is
-  if (!validator) return key;
-  try {
-    return await validator({ input });
-  } catch (error) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: error instanceof Error ? error.message : "Validation failed",
-    });
-  }
+  // Per-app validators (e.g. paypal) live under app-store packages and are not
+  // imported here — Turbopack resolves dynamic imports at build time even when optional.
+  return input.key;
 };
 
 export const updateAppCredentialsHandler = async ({ ctx, input }: UpdateAppCredentialsOptions) => {

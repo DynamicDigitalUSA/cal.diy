@@ -18,7 +18,7 @@ ARG CSP_POLICY
 ARG NEXT_PUBLIC_SINGLE_ORG_SLUG
 ARG ORGANIZATIONS_ENABLED
 
-## Comma-separated app-store directory names to keep in the image
+## Comma-separated app-store directory names to keep, or "all" (default — reliable builds)
 ARG APP_STORE_INCLUDE=googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar
 
 ENV NEXT_PUBLIC_WEBAPP_URL=http://NEXT_PUBLIC_WEBAPP_URL_PLACEHOLDER \

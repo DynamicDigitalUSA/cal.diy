@@ -367,7 +367,7 @@ Executable doesn't exist at /Users/alice/Library/Caches/ms-playwright/chromium-1
 
 The Docker image can be found on DockerHub at [https://hub.docker.com/r/calcom/cal.diy](https://hub.docker.com/r/calcom/cal.diy).
 
-**Slim self-host builds (Dokploy):** Web and API images use a Google-focused app-store allowlist (`APP_STORE_INCLUDE`), Next.js standalone for web, and a multi-stage API image. After upgrading from older fat images, reclaim disk with [`scripts/dokploy-prune-disk.sh`](scripts/dokploy-prune-disk.sh) — see [`scripts/DOKPLOY-DISK.md`](scripts/DOKPLOY-DISK.md).
+**Slim self-host builds (Dokploy):** Web uses Next.js **standalone** with a Google-focused `APP_STORE_INCLUDE` allowlist; API is multi-stage. After upgrading from older fat images, reclaim disk with [`scripts/dokploy-prune-disk.sh`](scripts/dokploy-prune-disk.sh) — see [`scripts/DOKPLOY-DISK.md`](scripts/DOKPLOY-DISK.md).
 
 **Note for ARM Users**: Use the {version}-arm suffix for pulling images. Example: `docker pull calcom/cal.diy:v5.6.19-arm`.
 

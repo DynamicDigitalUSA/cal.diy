@@ -1,6 +1,5 @@
 "use client";
 
-import AccountDialog from "@calcom/app-store/office365video/components/AccountDialog";
 import { AppList } from "@calcom/features/apps/components/AppList";
 import type { UpdateUsersDefaultConferencingAppParams } from "@calcom/features/apps/components/AppSetDefaultLinkDialog";
 import DisconnectIntegrationModal from "@calcom/features/apps/components/DisconnectIntegrationModal";
@@ -25,6 +24,7 @@ import { AtomsWrapper } from "../../src/components/atoms-wrapper";
 import { useToast } from "../../src/components/ui/use-toast";
 import { cn } from "../../src/lib/utils";
 import AppListCardPlatformWrapper from "./AppListCardPlatformWrapper";
+import { Office365AccountDialog } from "./Office365AccountDialog";
 import { useAtomBulkUpdateEventTypesToDefaultLocation } from "./hooks/useAtomBulkUpdateEventTypesToDefaultLocation";
 import { useAtomGetEventTypes } from "./hooks/useAtomGetEventTypes";
 import {
@@ -344,7 +344,7 @@ export const ConferencingAppsViewPlatformWrapper = ({
             isPlatform={true}
           />
 
-          <AccountDialog
+          <Office365AccountDialog
             open={isAccountModalOpen}
             onOpenChange={setIsAccountModalOpen}
             handleSubmit={() => connect(OFFICE_365_VIDEO)}

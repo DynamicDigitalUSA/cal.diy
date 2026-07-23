@@ -26,12 +26,13 @@ docker system df
 - API image: multi-stage build; production deps only; same app-store allowlist
 - API **builder** still copies `apps/web` so Yarn can install shared deps used by `@calcom/trpc` typecheck; the **runner** does not include web
 - Build context: `.yarn/cache` and app-store templates excluded via `.dockerignore`
+- Hard imports of omitted apps (Alby price UI, PayPal validators, Office365 dialog, etc.) were removed or inlined so the slim allowlist can compile
 
 Default allowlist:
 
 `googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar`
 
-Override with env/build-arg `APP_STORE_INCLUDE`.
+Override with env/build-arg `APP_STORE_INCLUDE` (use `all` only if you want every integration).
 
 ## Google setup
 

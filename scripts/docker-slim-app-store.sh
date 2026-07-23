@@ -1,5 +1,6 @@
 #!/bin/sh
 # Strip packages/app-store to APP_STORE_INCLUDE (comma-separated directory names).
+# Use APP_STORE_INCLUDE=all to keep every app.
 # Keeps shared non-app paths (_*, templates removed, root files).
 # POSIX sh so it works on Alpine (no bash).
 # Also prunes workspace:* deps from packages/app-store/package.json for removed apps
@@ -8,6 +9,16 @@ set -eu
 
 APP_STORE_DIR="${1:-packages/app-store}"
 INCLUDE="${APP_STORE_INCLUDE:-googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar}"
+
+# Always remove scaffold templates (not needed at runtime)
+rm -rf "${APP_STORE_DIR}/templates"
+
+case "$INCLUDE" in
+  all|"*")
+    echo "APP_STORE_INCLUDE=${INCLUDE} — keeping all app-store apps"
+    exit 0
+    ;;
+esac
 
 keep_app() {
   case ",${INCLUDE}," in
@@ -21,7 +32,6 @@ REMOVED_PKG_NAMES=""
 record_removed_pkg() {
   dir="$1"
   if [ -f "${dir}/package.json" ]; then
-    # Prefer node (available in Docker builders); fall back to sed
     if command -v node >/dev/null 2>&1; then
       pkg_name="$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).name||'')" "$dir/package.json")"
     else
@@ -32,9 +42,6 @@ record_removed_pkg() {
     fi
   fi
 }
-
-# Always remove scaffold templates (not needed at runtime)
-rm -rf "${APP_STORE_DIR}/templates"
 
 # Remove ee apps unless listed in allowlist (ee/<name>)
 if [ -d "${APP_STORE_DIR}/ee" ]; then
@@ -56,7 +63,6 @@ for dir in "${APP_STORE_DIR}"/*; do
       continue
       ;;
   esac
-  # Only strip directories that look like apps
   if [ -f "${dir}/_metadata.ts" ] || [ -f "${dir}/config.json" ] || [ -f "${dir}/package.json" ]; then
     if ! keep_app "$name"; then
       record_removed_pkg "$dir"
@@ -65,7 +71,6 @@ for dir in "${APP_STORE_DIR}"/*; do
   fi
 done
 
-# Drop workspace deps for removed apps from app-store package.json
 APP_STORE_PKG="${APP_STORE_DIR}/package.json"
 if [ -n "$REMOVED_PKG_NAMES" ] && [ -f "$APP_STORE_PKG" ] && command -v node >/dev/null 2>&1; then
   export APP_STORE_PKG REMOVED_PKG_NAMES
@@ -93,3 +98,31 @@ NODE
 fi
 
 echo "Stripped app-store to: ${INCLUDE}"
+
+# Remove web Setup/payment UI that hard-imports stripped apps (Turbopack resolves these).
+# Only touch folders that correspond to an app-store app dir — never shared UI like installation/layouts.
+WEB_APPS_DIR="apps/web/components/apps"
+if [ -d "$WEB_APPS_DIR" ] && [ -d "$APP_STORE_DIR" ]; then
+  # Build list of app names that still exist under app-store after strip
+  for dir in "$WEB_APPS_DIR"/*; do
+    [ -d "$dir" ] || continue
+    name="$(basename "$dir")"
+    case "$name" in
+      installation|layouts)
+        continue
+        ;;
+    esac
+    # If this folder name matches a (now-removed) app-store app, drop it
+    if ! keep_app "$name"; then
+      # Only remove if it looked like an integration folder (had been an app), not random shared code.
+      # Heuristic: name matches allowlist style (no capitals except acronyms) and isn't a known shared component file-dir.
+      case "$name" in
+        App*|Calendar*|Destination*|Install*|Multi*)
+          continue
+          ;;
+      esac
+      rm -rf "$dir"
+      echo "Removed web app UI: $dir"
+    fi
+  done
+fi
