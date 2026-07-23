@@ -266,15 +266,19 @@ export default async function main() {
     .map((app) => app.dirName ?? app.slug)
     .filter(Boolean);
   if (allowedDirNames.length > 0) {
-    const { count } = await prisma.app.updateMany({
-      where: {
-        dirName: { notIn: allowedDirNames },
-        enabled: true,
-      },
-      data: { enabled: false },
-    });
-    if (count > 0) {
-      console.log(`📴 Disabled ${count} app(s) not in APP_STORE_INCLUDE allowlist`);
+    try {
+      const { count } = await prisma.app.updateMany({
+        where: {
+          dirName: { notIn: allowedDirNames },
+          enabled: true,
+        },
+        data: { enabled: false },
+      });
+      if (count > 0) {
+        console.log(`📴 Disabled ${count} app(s) not in APP_STORE_INCLUDE allowlist`);
+      }
+    } catch (e) {
+      console.log(`Could not disable non-allowlisted apps. Error:`, e);
     }
   }
 }
