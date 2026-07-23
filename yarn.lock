@@ -2532,6 +2532,7 @@ __metadata:
     "@trigger.dev/sdk": "npm:4.3.2"
     "@types/deasync": "npm:^0"
     "@types/web-push": "npm:3.6.3"
+    "@upstash/redis": "npm:1.35.2"
     "@vercel/functions": "npm:1.4.0"
     city-timezones: "npm:1.2.1"
     class-variance-authority: "npm:0.7.1"
