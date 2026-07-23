@@ -12,7 +12,8 @@ import { z } from "zod";
 import BookingPageTagManager from "@calcom/app-store/BookingPageTagManager";
 import type { getEventLocationValue } from "@calcom/app-store/locations";
 import { getSuccessPageLocationMessage, guessEventLocationType } from "@calcom/app-store/locations";
-import { getEventTypeAppData } from "@calcom/app-store/utils";
+import { appDataSchemas } from "@calcom/app-store/apps.schemas.generated";
+import { getEventTypeAppData, type EventTypeAppsList } from "@calcom/app-store/utils";
 import { eventTypeMetaDataSchemaWithTypedApps } from "@calcom/app-store/zod-utils";
 import type { ConfigType } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
@@ -271,14 +272,18 @@ export default function Success(props: PageProps) {
     t,
   };
 
-  const giphyAppData = getEventTypeAppData(
-    {
-      ...eventType,
-      metadata: eventTypeMetaDataSchemaWithTypedApps.parse(eventType.metadata),
-    },
-    "giphy"
-  );
-  const giphyImage = giphyAppData?.thankYouPage;
+  // giphy thank-you page is legacy metadata; only read it when giphy is in APP_STORE_INCLUDE
+  const giphyAppData =
+    "giphy" in appDataSchemas
+      ? getEventTypeAppData(
+          {
+            ...eventType,
+            metadata: eventTypeMetaDataSchemaWithTypedApps.parse(eventType.metadata),
+          },
+          "giphy" as EventTypeAppsList
+        )
+      : null;
+  const giphyImage = (giphyAppData as { thankYouPage?: string } | null)?.thankYouPage;
   const isRoundRobin = eventType.schedulingType === SchedulingType.ROUND_ROBIN;
 
   const eventName = getEventName(eventNameObject, true);

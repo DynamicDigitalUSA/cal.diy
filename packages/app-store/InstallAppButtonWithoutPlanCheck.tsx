@@ -1,5 +1,7 @@
 "use client";
 
+import type { ComponentType } from "react";
+
 import type { UseAddAppMutationOptions } from "@calcom/app-store/_utils/useAddAppMutation";
 import useAddAppMutation from "@calcom/app-store/_utils/useAddAppMutation";
 import { deriveAppDictKeyFromType } from "@calcom/lib/deriveAppDictKeyFromType";
@@ -16,7 +18,10 @@ export const InstallAppButtonWithoutPlanCheck = (
 ) => {
   const mutation = useAddAppMutation(null, props.options);
   const key = deriveAppDictKeyFromType(props.type, InstallAppButtonMap);
-  const InstallAppButtonComponent = InstallAppButtonMap[key as keyof typeof InstallAppButtonMap];
+  // Map can be empty when apps are stripped via APP_STORE_INCLUDE, so the index type collapses to `never`.
+  const InstallAppButtonComponent = InstallAppButtonMap[key as keyof typeof InstallAppButtonMap] as
+    | ComponentType<InstallAppButtonProps>
+    | undefined;
   if (!InstallAppButtonComponent)
     return (
       <>

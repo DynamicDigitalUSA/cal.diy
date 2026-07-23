@@ -1370,7 +1370,9 @@ export const TestData = {
       },
     },
     "office365-calendar": {
-      ...appStoreMetadata.office365calendar,
+      // Cast keeps this fixture valid when the app is stripped via APP_STORE_INCLUDE
+      ...(appStoreMetadata as Record<string, (typeof appStoreMetadata)[keyof typeof appStoreMetadata]>)
+        .office365calendar,
       keys: {
         expiry_date: Infinity,
         client_id: "client_id",
@@ -1398,7 +1400,9 @@ export const TestData = {
       },
     },
     zoomvideo: {
-      ...appStoreMetadata.zoomvideo,
+      // Cast keeps this fixture valid when the app is stripped via APP_STORE_INCLUDE
+      ...(appStoreMetadata as Record<string, (typeof appStoreMetadata)[keyof typeof appStoreMetadata]>)
+        .zoomvideo,
       keys: {
         expiry_date: Infinity,
         api_key: "",
