@@ -260,6 +260,23 @@ export default async function main() {
       app.isTemplate
     );
   }
+
+  // Slim builds: hide apps that are no longer in generated metadata
+  const allowedDirNames = Object.values(appStoreMetadata)
+    .map((app) => app.dirName ?? app.slug)
+    .filter(Boolean);
+  if (allowedDirNames.length > 0) {
+    const { count } = await prisma.app.updateMany({
+      where: {
+        dirName: { notIn: allowedDirNames },
+        enabled: true,
+      },
+      data: { enabled: false },
+    });
+    if (count > 0) {
+      console.log(`📴 Disabled ${count} app(s) not in APP_STORE_INCLUDE allowlist`);
+    }
+  }
 }
 
 if (require.main === module) {

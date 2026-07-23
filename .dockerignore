@@ -2,6 +2,10 @@
 node_modules
 **/node_modules
 
+# Yarn cache (large; not needed when yarn.lock is present)
+.yarn/cache
+**/.yarn/cache
+
 # Build outputs
 .next
 **/.next
@@ -21,6 +25,9 @@ test-results
 **/test-results
 .turbo
 **/.turbo
+
+# App-store scaffolds / demo media (also stripped in Dockerfile; keep out of context)
+packages/app-store/templates
 
 # Logs
 *.log

@@ -3,6 +3,7 @@ import { config as dotenvConfig } from "dotenv";
 import type { NextConfig } from "next";
 import type { RouteHas } from "next/dist/lib/load-custom-routes";
 import { withAxiom } from "next-axiom";
+import path from "node:path";
 import i18nConfig from "@calcom/i18n/next-i18next.config";
 import packageJson from "./package.json";
 import {
@@ -14,6 +15,10 @@ import {
 import { TRIGGER_VERSION } from "./trigger.version"; // adjust path as needed
 
 dotenvConfig({ path: "../../.env" });
+
+const buildStandalone = process.env.BUILD_STANDALONE === "true";
+// Monorepo root for Next standalone file tracing (apps/web -> repo root)
+const monorepoRoot = path.join(__dirname, "../..");
 
 const { version } = packageJson;
 const {
@@ -222,7 +227,9 @@ const nextConfig = (phase: string): NextConfig => {
   }
 
   return {
-    output: process.env.BUILD_STANDALONE === "true" ? "standalone" : undefined,
+    output: buildStandalone ? "standalone" : undefined,
+    // Trace monorepo workspace deps into the standalone output for Docker
+    outputFileTracingRoot: buildStandalone ? monorepoRoot : undefined,
     serverExternalPackages: [
       "deasync",
       "http-cookie-agent",
@@ -236,7 +243,7 @@ const nextConfig = (phase: string): NextConfig => {
     experimental: {
       optimizePackageImports: ["@calcom/ui"],
     },
-    productionBrowserSourceMaps: true,
+    productionBrowserSourceMaps: !buildStandalone,
     transpilePackages: [
       "@calcom/app-store",
       "@calcom/dayjs",

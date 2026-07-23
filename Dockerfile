@@ -18,6 +18,9 @@ ARG CSP_POLICY
 ARG NEXT_PUBLIC_SINGLE_ORG_SLUG
 ARG ORGANIZATIONS_ENABLED
 
+## Comma-separated app-store directory names to keep in the image
+ARG APP_STORE_INCLUDE=googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar
+
 ENV NEXT_PUBLIC_WEBAPP_URL=http://NEXT_PUBLIC_WEBAPP_URL_PLACEHOLDER \
   NEXT_PUBLIC_API_V2_URL=$NEXT_PUBLIC_API_V2_URL \
   NEXT_PUBLIC_LICENSE_CONSENT=$NEXT_PUBLIC_LICENSE_CONSENT \
@@ -32,63 +35,75 @@ ENV NEXT_PUBLIC_WEBAPP_URL=http://NEXT_PUBLIC_WEBAPP_URL_PLACEHOLDER \
   ORGANIZATIONS_ENABLED=$ORGANIZATIONS_ENABLED \
   NODE_OPTIONS=--max-old-space-size=${MAX_OLD_SPACE_SIZE} \
   BUILD_STANDALONE=true \
-  CSP_POLICY=$CSP_POLICY
+  CSP_POLICY=$CSP_POLICY \
+  APP_STORE_INCLUDE=$APP_STORE_INCLUDE
 
 COPY package.json yarn.lock .yarnrc.yml playwright.config.ts turbo.json i18n.json ./
 COPY .yarn ./.yarn
 COPY apps/web ./apps/web
 COPY apps/api/v2 ./apps/api/v2
 COPY packages ./packages
+COPY scripts ./scripts
+
+RUN chmod +x scripts/docker-slim-app-store.sh scripts/*.sh \
+  && APP_STORE_INCLUDE="$APP_STORE_INCLUDE" scripts/docker-slim-app-store.sh packages/app-store
 
 RUN yarn config set httpTimeout 1200000
-RUN npx turbo prune --scope=@calcom/web --scope=@calcom/trpc --docker
 RUN yarn install
+
+# Regenerate app-store maps for the allowlisted apps only
+RUN yarn workspace @calcom/app-store-cli run build
+
 # Build and make embed servable from web/public/embed folder
 RUN yarn workspace @calcom/trpc run build
 RUN yarn --cwd packages/embeds/embed-core workspace @calcom/embed-core run build
 RUN yarn --cwd apps/web workspace @calcom/web run copy-app-store-static
 RUN yarn --cwd apps/web workspace @calcom/web run build
-RUN rm -rf node_modules/.cache .yarn/cache apps/web/.next/cache
 
-FROM node:20 AS builder-two
-
-WORKDIR /calcom
+# Bake runtime URL into standalone output at build time (re-run at container start if needed)
 ARG NEXT_PUBLIC_WEBAPP_URL=http://localhost:3000
-
-ENV NODE_ENV=production
-
-COPY package.json .yarnrc.yml turbo.json i18n.json ./
-COPY .yarn ./.yarn
-COPY --from=builder /calcom/yarn.lock ./yarn.lock
-COPY --from=builder /calcom/node_modules ./node_modules
-COPY --from=builder /calcom/packages ./packages
-COPY --from=builder /calcom/apps/web ./apps/web
-COPY --from=builder /calcom/packages/prisma/schema.prisma ./prisma/schema.prisma
-COPY scripts scripts
-RUN chmod +x scripts/*
-
-# Save value used during this build stage. If NEXT_PUBLIC_WEBAPP_URL and BUILT_NEXT_PUBLIC_WEBAPP_URL differ at
-# run-time, then start.sh will find/replace static values again.
 ENV NEXT_PUBLIC_WEBAPP_URL=$NEXT_PUBLIC_WEBAPP_URL \
   BUILT_NEXT_PUBLIC_WEBAPP_URL=$NEXT_PUBLIC_WEBAPP_URL
-
 RUN scripts/replace-placeholder.sh http://NEXT_PUBLIC_WEBAPP_URL_PLACEHOLDER ${NEXT_PUBLIC_WEBAPP_URL}
+
+RUN rm -rf node_modules/.cache .yarn/cache apps/web/.next/cache
 
 FROM node:20 AS runner
 
 WORKDIR /calcom
 
-RUN apt-get update && apt-get install -y --no-install-recommends netcat-openbsd wget && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends netcat-openbsd wget \
+  && npm install -g prisma@6.16.1 \
+  && rm -rf /var/lib/apt/lists/* /root/.npm
 
-COPY --from=builder-two /calcom ./
 ARG NEXT_PUBLIC_WEBAPP_URL=http://localhost:3000
-ENV NEXT_PUBLIC_WEBAPP_URL=$NEXT_PUBLIC_WEBAPP_URL \
-  BUILT_NEXT_PUBLIC_WEBAPP_URL=$NEXT_PUBLIC_WEBAPP_URL
+ENV NODE_ENV=production \
+  NEXT_PUBLIC_WEBAPP_URL=$NEXT_PUBLIC_WEBAPP_URL \
+  BUILT_NEXT_PUBLIC_WEBAPP_URL=$NEXT_PUBLIC_WEBAPP_URL \
+  SEED_APP_STORE=true
 
-ENV NODE_ENV=production
+# Next.js standalone server (includes traced node_modules + workspace packages)
+COPY --from=builder /calcom/apps/web/.next/standalone ./
+COPY --from=builder /calcom/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /calcom/apps/web/public ./apps/web/public
+
+# Ensure Prisma client is present for migrate seed (may already be traced into standalone)
+COPY --from=builder /calcom/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /calcom/node_modules/.prisma ./node_modules/.prisma
+
+# Prisma migrations + slim seed (no full monorepo / yarn tree)
+COPY --from=builder /calcom/packages/prisma/schema.prisma ./packages/prisma/schema.prisma
+COPY --from=builder /calcom/packages/prisma/migrations ./packages/prisma/migrations
+COPY --from=builder /calcom/scripts/wait-for-it.sh ./scripts/wait-for-it.sh
+COPY --from=builder /calcom/scripts/replace-placeholder.sh ./scripts/replace-placeholder.sh
+COPY --from=builder /calcom/scripts/start-standalone.sh ./scripts/start-standalone.sh
+COPY --from=builder /calcom/scripts/seed-app-store-docker.mjs ./scripts/seed-app-store-docker.mjs
+
+RUN chmod +x scripts/*
+
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=30s --retries=5 \
   CMD wget --spider http://localhost:3000 || exit 1
 
-CMD ["/calcom/scripts/start.sh"]
+CMD ["/calcom/scripts/start-standalone.sh"]

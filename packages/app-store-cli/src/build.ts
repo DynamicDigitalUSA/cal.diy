@@ -77,6 +77,35 @@ function generateFiles() {
     }
   });
 
+  // Slim default for cal.diy: Google Calendar/Meet + hardwired deps.
+  // Set APP_STORE_INCLUDE=all to generate every app, or a comma-separated dir-name list to customize.
+  const DEFAULT_APP_STORE_INCLUDE =
+    "googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar";
+  const rawInclude = process.env.APP_STORE_INCLUDE?.trim();
+  const includeAll = rawInclude === "all" || rawInclude === "*";
+  const appStoreInclude = includeAll
+    ? null
+    : (rawInclude || DEFAULT_APP_STORE_INCLUDE).split(",").map((name) => name.trim()).filter(Boolean);
+
+  if (appStoreInclude?.length) {
+    const includeSet = new Set(appStoreInclude);
+    const beforeCount = appDirs.length;
+    const filtered = appDirs.filter((dir) => includeSet.has(dir.name));
+    const missing = appStoreInclude.filter((name) => !appDirs.some((dir) => dir.name === name));
+    if (missing.length) {
+      console.warn(
+        `[app-store-cli] APP_STORE_INCLUDE entries not found (skipped): ${missing.join(", ")}`
+      );
+    }
+    appDirs.length = 0;
+    appDirs.push(...filtered);
+    console.log(
+      `[app-store-cli] APP_STORE_INCLUDE active: ${appDirs.length}/${beforeCount} apps (${[...includeSet].join(", ")})`
+    );
+  } else {
+    console.log(`[app-store-cli] APP_STORE_INCLUDE=all — generating every app`);
+  }
+
   function forEachAppDir(callback: (arg: App) => void, filter: (arg: App) => boolean = () => true) {
     for (let i = 0; i < appDirs.length; i++) {
       const configPath = path.join(APP_STORE_PATH, appDirs[i].path, "config.json");

@@ -59,6 +59,7 @@ services:
         DATABASE_URL: ${DATABASE_URL}
         DATABASE_DIRECT_URL: ${DATABASE_URL}
         CSP_POLICY: ${CSP_POLICY}
+        APP_STORE_INCLUDE: ${APP_STORE_INCLUDE:-googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar}
     restart: always
     env_file: .env
     environment:
@@ -86,6 +87,7 @@ services:
       args:
         DATABASE_URL: ${DATABASE_URL}
         DATABASE_DIRECT_URL: ${DATABASE_URL}
+        APP_STORE_INCLUDE: ${APP_STORE_INCLUDE:-googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar}
     restart: always
     env_file: .env
     environment:
