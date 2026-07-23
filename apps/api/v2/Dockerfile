@@ -19,6 +19,9 @@ ENV NODE_ENV=production \
 COPY package.json yarn.lock .yarnrc.yml turbo.json i18n.json ./
 COPY .yarn ./.yarn
 COPY apps/api/v2 ./apps/api/v2
+# apps/web is required at build time: many packages hoist types/deps from it,
+# and @calcom/trpc build:server imports @calcom/web. Not copied into the runner.
+COPY apps/web ./apps/web
 COPY packages ./packages
 COPY scripts ./scripts
 

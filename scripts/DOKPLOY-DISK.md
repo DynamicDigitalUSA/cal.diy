@@ -24,6 +24,7 @@ docker system df
 
 - Web image: Next.js **standalone** runner + Google-focused `APP_STORE_INCLUDE` apps
 - API image: multi-stage build; production deps only; same app-store allowlist
+- API **builder** still copies `apps/web` so Yarn can install shared deps used by `@calcom/trpc` typecheck; the **runner** does not include web
 - Build context: `.yarn/cache` and app-store templates excluded via `.dockerignore`
 
 Default allowlist:
