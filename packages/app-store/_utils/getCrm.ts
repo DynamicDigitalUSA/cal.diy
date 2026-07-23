@@ -1,16 +1,26 @@
 import logger from "@calcom/lib/logger";
 import type { CredentialPayload } from "@calcom/types/Credential";
+import type { CRM } from "@calcom/types/CrmService";
 
 import { CrmServiceMap } from "../crm.apps.generated";
 
 const log = logger.getSubLogger({ prefix: ["CrmManager"] });
-export const getCrm = async (credential: CredentialPayload, appOptions?: Record<string, unknown>) => {
+export const getCrm = async (
+  credential: CredentialPayload,
+  appOptions?: Record<string, unknown>
+): Promise<CRM | null> => {
   if (!credential || !credential.key) return null;
   const { type: crmType } = credential;
 
   const crmName = crmType.split("_")[0];
 
-  const crmServiceImportFn = await CrmServiceMap[crmName as keyof typeof CrmServiceMap];
+  // Cast: empty APP_STORE_INCLUDE maps are `{}` and make keyof `never`
+  const crmServiceImportFn = await (
+    CrmServiceMap as Record<
+      string,
+      Promise<{ default?: (credential: CredentialPayload, appOptions?: Record<string, unknown>) => CRM }> | undefined
+    >
+  )[crmName];
 
   if (!crmServiceImportFn) {
     log.warn(`crm of type ${crmType} is not implemented`);
@@ -19,7 +29,7 @@ export const getCrm = async (credential: CredentialPayload, appOptions?: Record<
 
   const createCrmService = crmServiceImportFn.default;
 
-  if (!createCrmService) {
+  if (!createCrmService || typeof createCrmService !== "function") {
     log.warn(`crm of type ${crmType} is not implemented`);
     return null;
   }

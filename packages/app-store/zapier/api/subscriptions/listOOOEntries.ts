@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { selectOOOEntries } from "@calcom/features/ooo/lib/selectOOOEntries";
 import { listOOOEntries } from "@calcom/features/webhooks/lib/scheduleTrigger";
 import { defaultHandler } from "@calcom/lib/server/defaultHandler";
 import { defaultResponder } from "@calcom/lib/server/defaultResponder";
@@ -7,39 +8,7 @@ import { WebhookTriggerEvents } from "@calcom/prisma/enums";
 
 import { validateAccountOrApiKey } from "../../lib/validateAccountOrApiKey";
 
-export const selectOOOEntries = {
-  id: true,
-  start: true,
-  end: true,
-  createdAt: true,
-  updatedAt: true,
-  notes: true,
-  showNotePublicly: true,
-  reason: {
-    select: {
-      reason: true,
-      emoji: true,
-    },
-  },
-  reasonId: true,
-  user: {
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      timeZone: true,
-    },
-  },
-  toUser: {
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      timeZone: true,
-    },
-  },
-  uuid: true,
-};
+export { selectOOOEntries };
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { account: authorizedAccount, appApiKey: validKey } = await validateAccountOrApiKey(req, [

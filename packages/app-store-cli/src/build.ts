@@ -77,8 +77,9 @@ function generateFiles() {
     }
   });
 
-  // Slim default for cal.diy: Google Calendar/Meet + hardwired deps.
-  // Set APP_STORE_INCLUDE=all to generate every app, or a comma-separated dir-name list to customize.
+  // Slim default for cal.diy: Google Calendar/Meet + calendars/payments needed at runtime.
+  // Hardwired compile deps (zapier select, outlook type, empty CRM/analytics maps) are handled in code
+  // so they do not need to be listed here. Set APP_STORE_INCLUDE=all for every app.
   const DEFAULT_APP_STORE_INCLUDE =
     "googlecalendar,googlevideo,dailyvideo,stripepayment,applecalendar,ics-feedcalendar,caldavcalendar";
   const rawInclude = process.env.APP_STORE_INCLUDE?.trim();

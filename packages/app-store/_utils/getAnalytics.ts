@@ -16,7 +16,10 @@ export const getAnalyticsService = async ({
 
   const analyticsName = analyticsType.split("_")[0];
 
-  const analyticsAppImportFn = AnalyticsServiceMap[analyticsName as keyof typeof AnalyticsServiceMap];
+  // Cast: empty APP_STORE_INCLUDE maps are `{}` and make keyof `never`
+  const analyticsAppImportFn = (
+    AnalyticsServiceMap as Record<string, Promise<{ default?: unknown }> | undefined>
+  )[analyticsName];
 
   if (!analyticsAppImportFn) {
     log.warn(`analytics app not implemented`);
@@ -32,5 +35,5 @@ export const getAnalyticsService = async ({
     return null;
   }
 
-  return createAnalyticsService(credential);
+  return (createAnalyticsService as (credential: CredentialPayload) => AnalyticsService | null)(credential);
 };

@@ -13,8 +13,21 @@ export type UpdateAppCredentialsOptions = {
   input: TUpdateAppCredentialsInputSchema;
 };
 
-const validators = {
-  paypal: () => import("@calcom/paypal/lib/updateAppCredentials.validator"),
+type CredentialValidator = (args: {
+  input: TUpdateAppCredentialsInputSchema;
+}) => Promise<TUpdateAppCredentialsInputSchema["key"]>;
+
+/** Optional per-app validators — string specifier so missing apps do not break slim builds. */
+const loadValidator = async (appId: string): Promise<CredentialValidator | null> => {
+  if (appId !== "paypal") return null;
+  try {
+    // Non-literal specifier: TypeScript must not require the module at compile time
+    const specifier = "@calcom/app-store/paypal/lib/updateAppCredentials.validator";
+    const mod = (await import(specifier)) as { default: CredentialValidator };
+    return mod.default;
+  } catch {
+    return null;
+  }
 };
 
 export const handleCustomValidations = async ({
@@ -22,11 +35,10 @@ export const handleCustomValidations = async ({
   appId,
 }: UpdateAppCredentialsOptions & { appId: string }) => {
   const { key } = input;
-  const validatorGetter = validators[appId as keyof typeof validators];
+  const validator = await loadValidator(appId);
   // If no validator is found, return the key as is
-  if (!validatorGetter) return key;
+  if (!validator) return key;
   try {
-    const validator = (await validatorGetter()).default;
     return await validator({ input });
   } catch (error) {
     throw new TRPCError({

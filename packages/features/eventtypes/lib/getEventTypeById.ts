@@ -1,7 +1,8 @@
 //import "server-only";
+import { appDataSchemas } from "@calcom/app-store/apps.schemas.generated";
 import type { LocationObject } from "@calcom/app-store/locations";
 import { getLocationGroupedOptions } from "@calcom/app-store/server";
-import { getEventTypeAppData } from "@calcom/app-store/utils";
+import { getEventTypeAppData, type EventTypeAppsList } from "@calcom/app-store/utils";
 import { eventTypeMetaDataSchemaWithTypedApps } from "@calcom/app-store/zod-utils";
 import { getBookingFieldsWithSystemFields } from "@calcom/features/bookings/lib/getBookingFields";
 import { EventTypeRepository } from "@calcom/features/eventtypes/repositories/eventTypeRepository";
@@ -108,9 +109,16 @@ export const getEventTypeById = async ({
     );
   }
 
+  // giphy thank-you page is legacy metadata; only when giphy is in APP_STORE_INCLUDE
   newMetadata.apps = {
     ...apps,
-    giphy: getEventTypeAppData(eventTypeWithParsedMetadata, "giphy", true) ?? undefined,
+    ...("giphy" in appDataSchemas
+      ? {
+          giphy:
+            getEventTypeAppData(eventTypeWithParsedMetadata, "giphy" as EventTypeAppsList, true) ??
+            undefined,
+        }
+      : {}),
   };
 
   const parsedMetaData = newMetadata;
