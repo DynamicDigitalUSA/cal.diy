@@ -34,8 +34,12 @@ RUN yarn config set httpTimeout 1200000 \
   && yarn workspace @calcom/api-v2 run generate-schemas \
   && yarn workspace @calcom/api-v2 run build:docker \
   && yarn workspace @calcom/api-v2 run build \
-  && yarn workspaces focus @calcom/api-v2 --production \
   && rm -rf .yarn/cache node_modules/.cache
+
+# NOTE: Do not run `yarn workspaces focus @calcom/api-v2 --production` here.
+# @calcom/platform-libraries Vite-externals many packages that historically only
+# lived on apps/web (e.g. short-uuid, markdown-it, @sentry/nextjs). Focusing the
+# API workspace alone prunes them and the Nest process crashes on boot.
 
 FROM node:20-alpine AS runner
 
